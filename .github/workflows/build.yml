@@ -1,0 +1,28 @@
+name: Build
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build (release)
+        run: swift build -c release
+
+      - name: Assemble YouTube.app
+        run: |
+          BIN="$(swift build -c release --show-bin-path)"
+          mkdir -p YouTube.app/Contents/MacOS
+          cp "$BIN/YouTube" YouTube.app/Contents/MacOS/YouTube
+          cp Info.plist YouTube.app/Contents/Info.plist
+          codesign --force --deep --sign - YouTube.app
+          ditto -c -k --keepParent YouTube.app YouTube-macOS.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: YouTube-macOS
+          path: YouTube-macOS.zip
