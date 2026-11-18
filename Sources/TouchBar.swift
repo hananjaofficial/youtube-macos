@@ -1,5 +1,5 @@
 import AppKit
-import Combine
+import Observation
 
 extension NSTouchBarItem.Identifier {
     static let back10 = NSTouchBarItem.Identifier("com.local.youtube-mini.back10")
@@ -8,12 +8,12 @@ extension NSTouchBarItem.Identifier {
     static let videoTitle = NSTouchBarItem.Identifier("com.local.youtube-mini.videoTitle")
 }
 
+/// Touch Bar, gekoppelt an den HTML5-Player der YouTube-Engine.
 @MainActor
 final class TouchBarController: NSObject, NSTouchBarDelegate {
     static let shared = TouchBarController()
 
-    private let player = PlayerController.shared
-    private var cancellables = Set<AnyCancellable>()
+    private let engine = YouTubeEngine.shared
 
     private let titleLabel: NSTextField = {
         let label = NSTextField(labelWithString: "YouTube")
@@ -33,27 +33,33 @@ final class TouchBarController: NSObject, NSTouchBarDelegate {
 
     private override init() {
         super.init()
-        playButton.image = Self.symbol("play.fill")
         playButton.target = self
         playButton.action = #selector(playPause)
-
-        player.$title
-            .sink { [weak self] title in
-                self?.titleLabel.stringValue = title.isEmpty ? "YouTube" : title
-            }
-            .store(in: &cancellables)
-
-        player.$isPlaying
-            .sink { [weak self] playing in
-                self?.playButton.image = Self.symbol(playing ? "pause.fill" : "play.fill")
-            }
-            .store(in: &cancellables)
+        sync()
+        track()
     }
 
     /// Hängt die Touch Bar an das Fenster (und an den WebView, falls dieser den Fokus hat).
     func attach(to window: NSWindow) {
         window.touchBar = touchBar
-        player.webView.touchBarProvider = { [weak self] in self?.touchBar }
+        engine.webView.touchBarProvider = { [weak self] in self?.touchBar }
+    }
+
+    private func sync() {
+        titleLabel.stringValue = engine.title.isEmpty ? "YouTube" : engine.title
+        playButton.image = Self.symbol(engine.isPlaying ? "pause.fill" : "play.fill")
+    }
+
+    private func track() {
+        withObservationTracking {
+            _ = engine.title
+            _ = engine.isPlaying
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.sync()
+                self?.track()
+            }
+        }
     }
 
     // MARK: - NSTouchBarDelegate
@@ -79,11 +85,7 @@ final class TouchBarController: NSObject, NSTouchBarDelegate {
         }
     }
 
-    // MARK: - Helfer
-
-    private func buttonItem(_ id: NSTouchBarItem.Identifier,
-                            symbol name: String,
-                            action: Selector) -> NSCustomTouchBarItem {
+    private func buttonItem(_ id: NSTouchBarItem.Identifier, symbol name: String, action: Selector) -> NSCustomTouchBarItem {
         let item = NSCustomTouchBarItem(identifier: id)
         item.view = NSButton(image: Self.symbol(name), target: self, action: action)
         return item
@@ -93,7 +95,7 @@ final class TouchBarController: NSObject, NSTouchBarDelegate {
         NSImage(systemSymbolName: name, accessibilityDescription: nil) ?? NSImage()
     }
 
-    @objc private func playPause() { player.togglePlayPause() }
-    @objc private func back() { player.seek(by: -10) }
-    @objc private func forward() { player.seek(by: 10) }
+    @objc private func playPause() { engine.togglePlayPause() }
+    @objc private func back() { engine.seek(by: -10) }
+    @objc private func forward() { engine.seek(by: 10) }
 }

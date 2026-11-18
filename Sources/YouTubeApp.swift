@@ -8,17 +8,18 @@ struct YouTubeApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 360, idealWidth: 420, minHeight: 560, idealHeight: 720)
+                .frame(minWidth: 360, idealWidth: 420, minHeight: 560, idealHeight: 740)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
-        .defaultSize(width: 420, height: 720)
+        .defaultSize(width: 420, height: 740)
     }
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
+        NSApp.appearance = NSAppearance(named: .darkAqua)
         NSApp.activate(ignoringOtherApps: true)
     }
 
