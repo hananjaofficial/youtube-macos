@@ -8,11 +8,11 @@ struct YouTubeApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 320, idealWidth: 400, minHeight: 480, idealHeight: 650)
+                .frame(minWidth: 360, idealWidth: 420, minHeight: 560, idealHeight: 720)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
-        .defaultSize(width: 400, height: 650)
+        .defaultSize(width: 420, height: 720)
     }
 }
 

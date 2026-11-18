@@ -10,6 +10,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Warnung, falls .env im Repo liegt
+        run: |
+          if [ -f .env ]; then
+            echo "::warning::.env liegt im Repo. Secrets entfernen und bei Google neu erzeugen."
+          fi
+
+      - uses: actions/cache@v4
+        with:
+          path: .build
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.swift', 'Sources/**') }}
+          restore-keys: spm-${{ runner.os }}-
+
       - name: Build (release)
         run: swift build -c release
 

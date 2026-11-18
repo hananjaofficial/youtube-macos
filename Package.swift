@@ -9,5 +9,6 @@ let package = Package(
             name: "YouTube",
             path: "Sources"
         )
-    ]
+    ],
+    swiftLanguageVersions: [.v5]
 )

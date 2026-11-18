@@ -1,3 +1,9 @@
-.build/
-*.app
+.env
+.DS_Store
+/.build
+/Packages
+xcuserdata/
+DerivedData/
+.swiftpm/
 *.zip
+YouTube.app
