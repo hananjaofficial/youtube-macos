@@ -1,7 +1,8 @@
 import Foundation
 
-/// CSS/JS, die YouTube in eine reine Content-Fläche verwandeln.
+/// CSS/JS für die Web-Engine: Transparenz, Player-Steuerung.
 enum EngineScripts {
+    /// Nur für YouTube: transparent, ohne Kopfzeile und Seitenleiste.
     static let css = #"""
     html, body, ytd-app, #content, ytd-page-manager, ytd-browse, ytd-search, ytd-watch-flexy,
     #columns, #primary, #secondary, ytd-two-column-browse-results-renderer {
@@ -19,43 +20,54 @@ enum EngineScripts {
       display: none !important;
     }
     ytd-page-manager { margin-top: 0 !important; margin-left: 0 !important; }
-    ytd-browse, ytd-search { padding-top: 30px !important; }
-    #page-manager { padding-bottom: 80px !important; }
     ytd-feed-filter-chip-bar-renderer { background: transparent !important; }
     ::-webkit-scrollbar { display: none !important; }
     """#
 
-    /// Wählt das aktive Video (bei Shorts das sichtbare).
+    /// Wählt das aktive Video (YouTube, Instagram, TikTok).
     static let helper = #"""
-    window.__ytmPick = function () {
-      return document.querySelector('ytd-reel-video-renderer[is-active] video')
-          || document.querySelector('video.html5-main-video')
-          || document.querySelector('video');
+    window.__hpPick = function () {
+      var a = document.querySelector('ytd-reel-video-renderer[is-active] video');
+      if (a) { return a; }
+      var vs = Array.prototype.slice.call(document.querySelectorAll('video'));
+      if (!vs.length) { return null; }
+      var playing = vs.filter(function (v) { return !v.paused && !v.ended; });
+      if (playing.length) { return playing[0]; }
+      var mid = window.innerHeight / 2, best = null, bd = 1e9;
+      vs.forEach(function (v) {
+        var r = v.getBoundingClientRect();
+        var d = Math.abs((r.top + r.bottom) / 2 - mid);
+        if (d < bd) { bd = d; best = v; }
+      });
+      return best;
     };
     """#
 
     /// Wird bei document-start in jede Seite injiziert.
     static let transform: String = {
         let literal = (try? JSONEncoder().encode(css)).flatMap { String(data: $0, encoding: .utf8) } ?? "\"\""
-        return "(function(){ var s=document.createElement('style'); s.textContent=\(literal); (document.head||document.documentElement).appendChild(s); \(helper) })();"
+        return "(function(){\n" + helper
+            + "\nif (/(^|\\.)youtube\\.com$/.test(location.hostname)) {"
+            + " var s=document.createElement('style'); s.textContent=\(literal);"
+            + " (document.head||document.documentElement).appendChild(s); }\n})();"
     }()
 
     static let stateQuery = #"""
     (function(){
-      var v = window.__ytmPick && window.__ytmPick();
-      var t = document.title.replace(/^\(\d+\)\s*/, '').replace(/\s*-\s*YouTube$/, '');
-      return JSON.stringify({title: t, hasVideo: !!v, playing: !!v && !v.paused && !v.ended});
+      var v = window.__hpPick && window.__hpPick();
+      return JSON.stringify({hasVideo: !!v, playing: !!v && !v.paused && !v.ended});
     })()
     """#
 
-    static let togglePlay = "var v=__ytmPick(); if(v){ if(v.paused){v.play();}else{v.pause();} }"
+    static let togglePlay = "var v=__hpPick(); if(v){ if(v.paused){v.play();}else{v.pause();} }"
+    static let pause = "var v=__hpPick(); if(v && !v.paused){ v.pause(); }"
 
     static func seek(_ seconds: Double) -> String {
-        "var v=__ytmPick(); if(v){ v.currentTime=Math.max(0, v.currentTime+(\(seconds))); }"
+        "var v=__hpPick(); if(v){ v.currentTime=Math.max(0, v.currentTime+(\(seconds))); }"
     }
 
     static let pip = #"""
-    var v = __ytmPick();
+    var v = __hpPick();
     if (v) {
       v.disablePictureInPicture = false;
       if (document.pictureInPictureElement) { document.exitPictureInPicture(); }

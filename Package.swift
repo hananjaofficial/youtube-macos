@@ -2,11 +2,11 @@
 import PackageDescription
 
 let package = Package(
-    name: "YouTube",
+    name: "hanstePlayer",
     platforms: [.macOS(.v14)],
     targets: [
         .executableTarget(
-            name: "YouTube",
+            name: "hanstePlayer",
             path: "Sources"
         )
     ],

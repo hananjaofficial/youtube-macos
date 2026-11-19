@@ -13,16 +13,16 @@ jobs:
       - name: Build (release)
         run: swift build -c release
 
-      - name: Assemble YouTube.app
+      - name: Assemble hanstePlayer.app
         run: |
           BIN="$(swift build -c release --show-bin-path)"
-          mkdir -p YouTube.app/Contents/MacOS
-          cp "$BIN/YouTube" YouTube.app/Contents/MacOS/YouTube
-          cp Info.plist YouTube.app/Contents/Info.plist
-          codesign --force --deep --sign - YouTube.app
-          ditto -c -k --keepParent YouTube.app YouTube-macOS.zip
+          mkdir -p hanstePlayer.app/Contents/MacOS
+          cp "$BIN/hanstePlayer" hanstePlayer.app/Contents/MacOS/hanstePlayer
+          cp Info.plist hanstePlayer.app/Contents/Info.plist
+          codesign --force --deep --sign - hanstePlayer.app
+          ditto -c -k --keepParent hanstePlayer.app hanstePlayer-macOS.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: YouTube-macOS
-          path: YouTube-macOS.zip
+          name: hanstePlayer-macOS
+          path: hanstePlayer-macOS.zip

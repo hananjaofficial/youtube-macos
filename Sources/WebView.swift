@@ -10,11 +10,30 @@ final class ControlWebView: WKWebView {
     }
 }
 
-/// Bettet die transparente YouTube-Engine in SwiftUI ein.
-struct YouTubeWebView: NSViewRepresentable {
-    func makeNSView(context: Context) -> ControlWebView {
-        YouTubeEngine.shared.webView
+/// Zeigt die WebView des gewählten Tabs, mit abgerundeten Ecken.
+struct TabWebView: NSViewRepresentable {
+    let tab: BrowserTab
+
+    func makeNSView(context: Context) -> NSView {
+        let container = NSView()
+        container.wantsLayer = true
+        container.layer?.cornerRadius = 14
+        container.layer?.cornerCurve = .continuous
+        container.layer?.masksToBounds = true
+        attach(to: container)
+        return container
     }
 
-    func updateNSView(_ nsView: ControlWebView, context: Context) {}
+    func updateNSView(_ container: NSView, context: Context) {
+        if container.subviews.first !== tab.webView {
+            container.subviews.forEach { $0.removeFromSuperview() }
+            attach(to: container)
+        }
+    }
+
+    private func attach(to container: NSView) {
+        tab.webView.frame = container.bounds
+        tab.webView.autoresizingMask = [.width, .height]
+        container.addSubview(tab.webView)
+    }
 }

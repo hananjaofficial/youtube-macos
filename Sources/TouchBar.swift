@@ -2,21 +2,21 @@ import AppKit
 import Observation
 
 extension NSTouchBarItem.Identifier {
-    static let back10 = NSTouchBarItem.Identifier("com.local.youtube-mini.back10")
-    static let playPause = NSTouchBarItem.Identifier("com.local.youtube-mini.playPause")
-    static let forward10 = NSTouchBarItem.Identifier("com.local.youtube-mini.forward10")
-    static let videoTitle = NSTouchBarItem.Identifier("com.local.youtube-mini.videoTitle")
+    static let back10 = NSTouchBarItem.Identifier("de.hananja.hanstePlayer.back10")
+    static let playPause = NSTouchBarItem.Identifier("de.hananja.hanstePlayer.playPause")
+    static let forward10 = NSTouchBarItem.Identifier("de.hananja.hanstePlayer.forward10")
+    static let videoTitle = NSTouchBarItem.Identifier("de.hananja.hanstePlayer.videoTitle")
 }
 
-/// Touch Bar, gekoppelt an den HTML5-Player der YouTube-Engine.
+/// Touch Bar, gekoppelt an den Player des gewählten Tabs.
 @MainActor
 final class TouchBarController: NSObject, NSTouchBarDelegate {
     static let shared = TouchBarController()
 
-    private let engine = YouTubeEngine.shared
+    private let store = TabStore.shared
 
     private let titleLabel: NSTextField = {
-        let label = NSTextField(labelWithString: "YouTube")
+        let label = NSTextField(labelWithString: "hanstePlayer")
         label.lineBreakMode = .byTruncatingTail
         label.font = .systemFont(ofSize: 13)
         label.textColor = .white
@@ -24,7 +24,7 @@ final class TouchBarController: NSObject, NSTouchBarDelegate {
     }()
     private let playButton = NSButton()
 
-    private lazy var touchBar: NSTouchBar = {
+    lazy var touchBar: NSTouchBar = {
         let bar = NSTouchBar()
         bar.delegate = self
         bar.defaultItemIdentifiers = [.back10, .playPause, .forward10, .videoTitle]
@@ -39,21 +39,21 @@ final class TouchBarController: NSObject, NSTouchBarDelegate {
         track()
     }
 
-    /// Hängt die Touch Bar an das Fenster (und an den WebView, falls dieser den Fokus hat).
+    /// Hängt die Touch Bar an das Fenster (die WebViews liefern sie über touchBarProvider).
     func attach(to window: NSWindow) {
         window.touchBar = touchBar
-        engine.webView.touchBarProvider = { [weak self] in self?.touchBar }
     }
 
     private func sync() {
-        titleLabel.stringValue = engine.title.isEmpty ? "YouTube" : engine.title
-        playButton.image = Self.symbol(engine.isPlaying ? "pause.fill" : "play.fill")
+        let title = store.selected?.videoTitle ?? ""
+        titleLabel.stringValue = title.isEmpty ? "hanstePlayer" : title
+        playButton.image = Self.symbol((store.selected?.isPlaying ?? false) ? "pause.fill" : "play.fill")
     }
 
     private func track() {
         withObservationTracking {
-            _ = engine.title
-            _ = engine.isPlaying
+            _ = store.selected?.videoTitle
+            _ = store.selected?.isPlaying
         } onChange: { [weak self] in
             Task { @MainActor in
                 self?.sync()
@@ -95,7 +95,7 @@ final class TouchBarController: NSObject, NSTouchBarDelegate {
         NSImage(systemSymbolName: name, accessibilityDescription: nil) ?? NSImage()
     }
 
-    @objc private func playPause() { engine.togglePlayPause() }
-    @objc private func back() { engine.seek(by: -10) }
-    @objc private func forward() { engine.seek(by: 10) }
+    @objc private func playPause() { store.selected?.togglePlayPause() }
+    @objc private func back() { store.selected?.seek(by: -10) }
+    @objc private func forward() { store.selected?.seek(by: 10) }
 }

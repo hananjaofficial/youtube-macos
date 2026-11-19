@@ -3,7 +3,7 @@ import AppKit
 
 @MainActor
 struct ContentView: View {
-    private let engine = YouTubeEngine.shared
+    private let store = TabStore.shared
     @State private var showSearch = false
     @State private var query = ""
     @State private var pinned = false
@@ -11,28 +11,24 @@ struct ContentView: View {
     @FocusState private var searchFocused: Bool
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             VisualEffectView(material: .hudWindow).ignoresSafeArea()
 
-            YouTubeWebView()
-
-            // Ziehfläche oben (Titelleiste ist versteckt)
-            VStack(spacing: 0) {
-                DragStrip().frame(height: 30)
-                Spacer(minLength: 0)
-            }
-
-            VStack(spacing: 10) {
+            VStack(spacing: 8) {
+                TabBar(store: store, showSearch: $showSearch, pinned: $pinned)
+                ServiceCapsule(store: store)
                 if showSearch {
                     searchField
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .transition(.move(edge: .top).combined(with: .opacity))
                 }
-                GlassBar(engine: engine, showSearch: $showSearch, pinned: $pinned)
+                if let tab = store.selected {
+                    TabWebView(tab: tab)
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 8)
+                }
             }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 14)
         }
-        .ignoresSafeArea()
+        .ignoresSafeArea(.container, edges: .top)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: showSearch)
         .background(WindowAccessor { configure($0) })
         .onChange(of: pinned) { _, isPinned in
@@ -48,20 +44,20 @@ struct ContentView: View {
             Image(systemName: "magnifyingglass")
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(.secondary)
-            TextField("Suchen oder YouTube-Link einfügen", text: $query)
+            TextField("Suchen oder Link einfügen", text: $query)
                 .textFieldStyle(.plain)
                 .focused($searchFocused)
                 .onSubmit {
-                    engine.open(query)
+                    store.openInput(query)
                     query = ""
                     showSearch = false
                 }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 11)
+        .padding(.vertical, 10)
         .background(.ultraThinMaterial, in: Capsule())
         .overlay(Capsule().stroke(.white.opacity(0.15), lineWidth: 1))
-        .shadow(color: .black.opacity(0.25), radius: 14, y: 6)
+        .padding(.horizontal, 12)
         .onExitCommand { showSearch = false }
     }
 

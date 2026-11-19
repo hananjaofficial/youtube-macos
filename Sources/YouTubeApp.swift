@@ -2,17 +2,25 @@ import SwiftUI
 import AppKit
 
 @main
-struct YouTubeApp: App {
+struct HanstePlayerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 360, idealWidth: 420, minHeight: 560, idealHeight: 740)
+                .frame(minWidth: 400, idealWidth: 480, minHeight: 560, idealHeight: 740)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
-        .defaultSize(width: 420, height: 740)
+        .defaultSize(width: 480, height: 740)
+        .commands {
+            CommandGroup(replacing: .newItem) {
+                Button("Neuer Tab") { TabStore.shared.newTab(url: Service.youtube.home) }
+                    .keyboardShortcut("t")
+                Button("Tab schließen") { TabStore.shared.closeSelected() }
+                    .keyboardShortcut("w")
+            }
+        }
     }
 }
 

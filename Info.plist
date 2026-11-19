@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.local.youtube-mini</string>
+    <string>de.hananja.hanstePlayer</string>
     <key>CFBundleName</key>
-    <string>YouTube</string>
+    <string>hanstePlayer</string>
     <key>CFBundleDisplayName</key>
-    <string>YouTube</string>
+    <string>hanstePlayer</string>
     <key>CFBundleExecutable</key>
-    <string>YouTube</string>
+    <string>hanstePlayer</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleVersion</key>
