@@ -2,12 +2,12 @@ import SwiftUI
 import WebKit
 import Observation
 
-/// Ein Browser-Tab mit eigener transparenter WebView (gemeinsamer, persistenter Login-Speicher).
+/// Ein Browser-Tab (= ein natives macOS-Fenster-Tab) mit eigener transparenter WebView.
 @Observable
 @MainActor
 final class BrowserTab: NSObject, Identifiable, WKNavigationDelegate, WKUIDelegate {
     let id = UUID()
-    var title = "Neuer Tab"
+    var title = "hanstePlayer"
     var urlString = ""
     var canGoBack = false
     var isLoading = false
@@ -16,14 +16,12 @@ final class BrowserTab: NSObject, Identifiable, WKNavigationDelegate, WKUIDelega
     var videoTitle = ""
 
     @ObservationIgnored let webView: ControlWebView
-    @ObservationIgnored private weak var store: TabStore?
     @ObservationIgnored private var observations: [NSKeyValueObservation] = []
 
     private static let safariUA =
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15"
 
-    init(url: URL, store: TabStore) {
-        self.store = store
+    init(url: URL) {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()   // persistenter Login für alle Tabs
         config.mediaTypesRequiringUserActionForPlayback = []
@@ -38,14 +36,21 @@ final class BrowserTab: NSObject, Identifiable, WKNavigationDelegate, WKUIDelega
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
-        webView.underPageBackgroundColor = .clear
-        if webView.responds(to: NSSelectorFromString("_setDrawsBackground:")) {
-            webView.setValue(false, forKey: "drawsBackground")
-        }
+        makeTransparent()
         webView.touchBarProvider = { TouchBarController.shared.touchBar }
 
         observations = [watch(\.url), watch(\.title), watch(\.canGoBack), watch(\.isLoading)]
         webView.load(URLRequest(url: url))
+    }
+
+    /// Kein eigener Hintergrund: Der Fenster-Blur scheint durch.
+    private func makeTransparent() {
+        webView.underPageBackgroundColor = .clear
+        if webView.responds(to: NSSelectorFromString("_setDrawsBackground:")) {
+            webView.setValue(false, forKey: "drawsBackground")
+        }
+        webView.wantsLayer = true
+        webView.layer?.backgroundColor = NSColor.clear.cgColor
     }
 
     private func watch<V>(_ keyPath: KeyPath<ControlWebView, V>) -> NSKeyValueObservation {
@@ -61,7 +66,7 @@ final class BrowserTab: NSObject, Identifiable, WKNavigationDelegate, WKUIDelega
         canGoBack = webView.canGoBack
         isLoading = webView.isLoading
         let cleaned = Self.cleanTitle(webView.title ?? "")
-        title = cleaned.isEmpty ? (service?.name ?? "Neuer Tab") : cleaned
+        title = cleaned.isEmpty ? (service?.name ?? "hanstePlayer") : cleaned
     }
 
     private static func cleanTitle(_ raw: String) -> String {
@@ -94,7 +99,6 @@ final class BrowserTab: NSObject, Identifiable, WKNavigationDelegate, WKUIDelega
     func togglePlayPause() { run(EngineScripts.togglePlay) }
     func seek(by seconds: Double) { run(EngineScripts.seek(seconds)) }
     func togglePiP() { run(EngineScripts.pip) }
-    func pause() { run(EngineScripts.pause) }
 
     private func run(_ js: String) {
         webView.evaluateJavaScript("(function(){ try { \(js) } catch(e) {} })();", completionHandler: nil)
@@ -132,7 +136,7 @@ final class BrowserTab: NSObject, Identifiable, WKNavigationDelegate, WKUIDelega
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
                  for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         if navigationAction.targetFrame == nil, let url = navigationAction.request.url {
-            store?.open(url, inNewTab: true)
+            TabStore.shared.openNewTab(url: url)
         }
         return nil
     }

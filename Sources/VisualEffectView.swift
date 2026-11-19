@@ -51,6 +51,5 @@ extension NSWindow {
         isOpaque = false
         backgroundColor = .clear
         hasShadow = true
-        appearance = NSAppearance(named: .darkAqua)
     }
 }

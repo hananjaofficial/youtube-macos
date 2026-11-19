@@ -45,15 +45,15 @@ final class TouchBarController: NSObject, NSTouchBarDelegate {
     }
 
     private func sync() {
-        let title = store.selected?.videoTitle ?? ""
+        let title = store.current?.videoTitle ?? ""
         titleLabel.stringValue = title.isEmpty ? "hanstePlayer" : title
-        playButton.image = Self.symbol((store.selected?.isPlaying ?? false) ? "pause.fill" : "play.fill")
+        playButton.image = Self.symbol((store.current?.isPlaying ?? false) ? "pause.fill" : "play.fill")
     }
 
     private func track() {
         withObservationTracking {
-            _ = store.selected?.videoTitle
-            _ = store.selected?.isPlaying
+            _ = store.current?.videoTitle
+            _ = store.current?.isPlaying
         } onChange: { [weak self] in
             Task { @MainActor in
                 self?.sync()
@@ -95,7 +95,7 @@ final class TouchBarController: NSObject, NSTouchBarDelegate {
         NSImage(systemSymbolName: name, accessibilityDescription: nil) ?? NSImage()
     }
 
-    @objc private func playPause() { store.selected?.togglePlayPause() }
-    @objc private func back() { store.selected?.seek(by: -10) }
-    @objc private func forward() { store.selected?.seek(by: 10) }
+    @objc private func playPause() { store.current?.togglePlayPause() }
+    @objc private func back() { store.current?.seek(by: -10) }
+    @objc private func forward() { store.current?.seek(by: 10) }
 }

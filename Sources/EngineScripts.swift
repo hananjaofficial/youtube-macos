@@ -4,14 +4,19 @@ import Foundation
 enum EngineScripts {
     /// Nur für YouTube: transparent, ohne Kopfzeile und Seitenleiste.
     static let css = #"""
-    html, body, ytd-app, #content, ytd-page-manager, ytd-browse, ytd-search, ytd-watch-flexy,
-    #columns, #primary, #secondary, ytd-two-column-browse-results-renderer {
+    html, html[dark], body, ytd-app, ytd-app[dark], #content, ytd-page-manager, ytd-browse, ytd-search,
+    ytd-watch-flexy, ytd-shorts, #shorts-container, #columns, #primary, #secondary,
+    #primary-inner, #secondary-inner, ytd-two-column-browse-results-renderer,
+    ytd-rich-grid-renderer, ytd-section-list-renderer {
       background: transparent !important;
+      background-color: transparent !important;
     }
-    html {
+    html, html[dark], :root {
       --yt-spec-base-background: transparent !important;
       --yt-spec-general-background-a: transparent !important;
       --yt-spec-general-background-b: transparent !important;
+      --yt-spec-general-background-c: transparent !important;
+      --yt-spec-brand-background-solid: transparent !important;
       --ytd-masthead-height: 0px !important;
       --ytd-mini-guide-width: 0px !important;
     }

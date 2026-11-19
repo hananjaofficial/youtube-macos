@@ -4,20 +4,9 @@ import AppKit
 /// Kapsel mit allen Diensten in einer Reihe: Logo + Abschnitts-Buttons je Dienst.
 @MainActor
 struct ServiceCapsule: View {
-    let store: TabStore
+    let tab: BrowserTab
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            content
-            ScrollView(.horizontal, showsIndicators: false) { content }
-        }
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().stroke(.white.opacity(0.15), lineWidth: 1))
-        .shadow(color: .black.opacity(0.25), radius: 14, y: 6)
-        .padding(.horizontal, 12)
-    }
-
-    private var content: some View {
         HStack(spacing: 6) {
             ForEach(Service.allCases) { service in
                 group(service)
@@ -26,16 +15,19 @@ struct ServiceCapsule: View {
                 }
             }
         }
-        .padding(6)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().stroke(.white.opacity(0.15), lineWidth: 1))
     }
 
     private func group(_ service: Service) -> some View {
-        let current = URL(string: store.selected?.urlString ?? "")
-        return HStack(spacing: 2) {
+        let current = URL(string: tab.urlString)
+        return HStack(spacing: 1) {
             Image(systemName: service.symbol)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(service.tint)
-                .frame(width: 24)
+                .frame(width: 22)
             ForEach(service.sections) { section in
                 GlassButton(
                     symbol: section.symbol,
@@ -43,7 +35,11 @@ struct ServiceCapsule: View {
                     help: "\(service.name) \(section.title)"
                 ) {
                     // ⌘-Klick öffnet einen neuen Tab
-                    store.open(section.url, inNewTab: NSEvent.modifierFlags.contains(.command))
+                    if NSEvent.modifierFlags.contains(.command) {
+                        TabStore.shared.openNewTab(url: section.url)
+                    } else {
+                        tab.load(section.url)
+                    }
                 }
             }
         }

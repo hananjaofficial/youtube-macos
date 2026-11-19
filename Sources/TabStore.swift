@@ -1,63 +1,40 @@
 import SwiftUI
 import Observation
 
-/// Verwaltet alle Tabs (jeder Tab = eigene WebView).
+/// Kennt den aktuellen Tab (des aktiven Fensters) und öffnet neue native Fenster-Tabs.
 @Observable
 @MainActor
 final class TabStore {
     static let shared = TabStore()
 
-    var tabs: [BrowserTab] = []
-    var selectedID: UUID?
+    var current: BrowserTab?
 
+    @ObservationIgnored private var pendingURL: URL?
     @ObservationIgnored private var timer: Timer?
 
-    var selected: BrowserTab? { tabs.first { $0.id == selectedID } }
-
     private init() {
-        newTab(url: Service.youtube.home)
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.selected?.refreshPlayer() }
+            Task { @MainActor in self?.current?.refreshPlayer() }
         }
     }
 
-    // MARK: - Tabs
-
-    func newTab(url: URL) {
-        let tab = BrowserTab(url: url, store: self)
-        tabs.append(tab)
-        select(tab)
+    /// Öffnet einen neuen nativen macOS-Tab (optional mit Adresse).
+    func openNewTab(url: URL? = nil) {
+        pendingURL = url
+        NSApp.sendAction(#selector(NSWindow.newWindowForTab(_:)), to: nil, from: nil)
     }
 
-    func select(_ tab: BrowserTab) {
-        guard selectedID != tab.id else { return }
-        selected?.pause()   // inaktive Tabs spielen nicht weiter
-        selectedID = tab.id
+    /// Startadresse für einen frisch erzeugten Tab.
+    func takeStartURL() -> URL {
+        defer { pendingURL = nil }
+        return pendingURL ?? Service.youtube.home
     }
-
-    func close(_ tab: BrowserTab) {
-        guard let index = tabs.firstIndex(where: { $0.id == tab.id }) else { return }
-        let wasSelected = tab.id == selectedID
-        tab.shutdown()
-        tabs.remove(at: index)
-        if tabs.isEmpty {
-            newTab(url: Service.youtube.home)
-        } else if wasSelected {
-            selectedID = tabs[min(index, tabs.count - 1)].id
-        }
-    }
-
-    func closeSelected() {
-        if let tab = selected { close(tab) }
-    }
-
-    // MARK: - Öffnen
 
     func open(_ url: URL, inNewTab: Bool) {
-        if inNewTab || selected == nil {
-            newTab(url: url)
+        if inNewTab || current == nil {
+            openNewTab(url: url)
         } else {
-            selected?.load(url)
+            current?.load(url)
         }
     }
 
@@ -66,9 +43,9 @@ final class TabStore {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         if let url = Self.directURL(text) {
-            open(url, inNewTab: false)
-        } else if let url = (selected?.service ?? .youtube).searchURL(text) {
-            open(url, inNewTab: false)
+            current?.load(url)
+        } else if let url = (current?.service ?? .youtube).searchURL(text) {
+            current?.load(url)
         }
     }
 

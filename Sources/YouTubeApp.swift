@@ -8,17 +8,15 @@ struct HanstePlayerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 400, idealWidth: 480, minHeight: 560, idealHeight: 740)
+                .frame(minWidth: 540, idealWidth: 680, minHeight: 560, idealHeight: 740)
         }
-        .windowStyle(.hiddenTitleBar)
+        .windowToolbarStyle(.unified(showsTitle: false))
         .windowResizability(.contentMinSize)
-        .defaultSize(width: 480, height: 740)
+        .defaultSize(width: 680, height: 740)
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("Neuer Tab") { TabStore.shared.newTab(url: Service.youtube.home) }
+                Button("Neuer Tab") { TabStore.shared.openNewTab() }
                     .keyboardShortcut("t")
-                Button("Tab schließen") { TabStore.shared.closeSelected() }
-                    .keyboardShortcut("w")
             }
         }
     }
@@ -27,7 +25,6 @@ struct HanstePlayerApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
-        NSApp.appearance = NSAppearance(named: .darkAqua)
         NSApp.activate(ignoringOtherApps: true)
     }
 
